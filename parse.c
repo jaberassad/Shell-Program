@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 
+//structures
 #define MAXARGS 1024
 
 enum Type{
@@ -50,6 +51,54 @@ struct redirect_cmd{
     int fd;
 };
 
+//constructors
+
+struct consec_cmd *consecCtor(struct cmd* left, struct cmd* right){
+    struct consec_cmd *node = malloc(sizeof(struct consec_cmd));
+    node->type = CONSEC;
+    node->left = left;
+    node->right = right;
+
+    return node;
+}
+
+struct pipe_cmd *pipeCtor(struct cmd* left, struct cmd* right){
+    struct pipe_cmd *node = malloc(sizeof(struct pipe_cmd));
+    node->type = PIPE;
+    node->left = left;
+    node->right = right;
+
+    return node;
+}
+
+struct background_cmd *backgroundCtor(struct cmd* command){
+    struct background_cmd *node = malloc(sizeof(struct background_cmd));
+    node->type = BACK;
+    node->command = command;
+
+    return node;
+}
+
+struct exec_cmd *execCtor(){
+        struct exec_cmd *node = malloc(sizeof(struct exec_cmd));
+        node->type = EXEC;
+        node->size = 0;
+
+        return node;
+}
+
+struct redirect_cmd *redirectCtor(struct cmd *command, char *file, char *efile, int mode, int fd){
+        struct redirect_cmd *node = malloc(sizeof(struct redirect_cmd));
+
+        node->command = command;
+        node->file = file;
+        node->efile = efile;
+        node->mode = mode;
+        node->fd = fd;
+
+        return node;
+}
+
 
 //verfies if the current character is one of the operators
 bool isOperator(char* command, int index){
@@ -94,30 +143,20 @@ struct cmd* parse(char* command, int start, int end){
     // Lowest to highest: ';' → '&' → '|' → '<'/'>' → plain exec
     // At the first operator found, we split the command and recursively build subtrees.
     if(consecFirstOccurence!=-1){
-        struct consec_cmd *res = malloc(sizeof(struct consec_cmd));
 
-        res->type = CONSEC;
-        res->left = parse(command, start, consecFirstOccurence-1);
-        res->right = parse(command, consecFirstOccurence+1, end);
+        return (struct cmd *) consecCtor(parse(command, start, consecFirstOccurence-1), 
+                                        parse(command, consecFirstOccurence+1, end));
 
-        return (struct cmd *) res;
     }else if(backgroundFirstOccurence!=-1){
-        struct background_cmd *res = malloc(sizeof(struct background_cmd));
 
-        res->type = BACK;
-        res->command = parse(command, start, backgroundFirstOccurence-1);
+        return (struct cmd *) backgroundCtor(malloc(sizeof(struct background_cmd)));
 
-        return (struct cmd *) res;
     }else if(pipeFirstOccurence!=-1){
-        struct pipe_cmd *res = malloc(sizeof(struct pipe_cmd));
 
-        res->type = PIPE;
-        res->left = parse(command, start, pipeFirstOccurence-1);
-        res->right = parse(command, pipeFirstOccurence+1, end);
+        return (struct cmd *) pipeCtor(parse(command, start, pipeFirstOccurence-1), 
+                                        parse(command, pipeFirstOccurence+1, end));
 
-        return (struct cmd *) res;
     }else if(redirectFirstOccurence!=-1){
-        struct redirect_cmd *res = malloc(sizeof(struct redirect_cmd));
 
         int startOfFile;
         int startOfCommand = redirectFirstOccurence;
@@ -142,37 +181,26 @@ struct cmd* parse(char* command, int start, int end){
         while(!isOperator(command, startOfCommand)) startOfCommand--;
         while(!isOperator(command, endOfFile)) endOfFile++;
 
-        res->type=REDIR;
-        res->command = parse(command, startOfCommand, redirectFirstOccurence-1);
-        res->file = startOfFile;
-        res->efile = endOfFile;
-        res->mode = mode;
-        res->fd = stdin;
+        return (struct cmd *) redirectCtor(command, startOfFile, endOfFile, mode, stdin);
 
-        return (struct cmd *) res;
     }else{
-
-        struct exec_cmd *res = malloc(sizeof(struct exec_cmd));
-        res->type = EXEC;
+        struct exec_cmd *res = execCtor();
         bool found = true;
-        int size = 0;
 
         while(command[start]==' ') start++;
         (res->argv)[0]=&command[start];
-        size++;
+        res->size++;
 
         for(; start<end; start++){
             if(found && command[start]==' '){
-                ((res->eargv))[size]=&command[start];
+                ((res->eargv))[res->size]=&command[start];
                 found = false;
             }else if(!found && command[start]!=' '){
-                ((res->argv))[size]=&command[start];
-                size++;
+                ((res->argv))[res->size]=&command[start];
+                res->size++;
                 found = true;
             }
         }
-
-        res->size = size;
 
         return (struct cmd *) res;
     }
