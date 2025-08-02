@@ -21,6 +21,7 @@ struct exec_cmd{
     enum Type type;
     char *argv[MAXARGS];
     char *eargv[MAXARGS];
+    int size;
 };
 
 struct pipe_cmd {
@@ -43,15 +44,15 @@ struct background_cmd{
 struct redirect_cmd{
     enum Type type;
     struct cmd *command;
-    char file;
-    char efile;
+    char *file;
+    char *efile;
     int mode;
     int fd;
 };
 
 
-
-bool isSymbol(char* command, int index){
+//verfies if the current character is one of the operators
+bool isOperator(char* command, int index){
     return  command[index]=='>' 
             || command[index]=='<' 
             || command[index]=='&'
@@ -62,6 +63,8 @@ bool isSymbol(char* command, int index){
 #ifndef PARSE
 #define PARSE
 
+
+//parses the command into a tree
 struct cmd* parse(char* command, int start, int end){
     int currChar = start;
 
@@ -70,6 +73,8 @@ struct cmd* parse(char* command, int start, int end){
     int pipeFirstOccurence = -1;
     int redirectFirstOccurence = -1;
 
+    //iterates in the buffer from int start to int end
+    //keeps track of the first occurence of each operator
     while(currChar<end){
         if(command[currChar]==';'){
             consecFirstOccurence=currChar;
@@ -85,7 +90,9 @@ struct cmd* parse(char* command, int start, int end){
         currChar++;
     }
 
-    
+    // Build the parse tree by checking for operators in order of precedence:
+    // Lowest to highest: ';' → '&' → '|' → '<'/'>' → plain exec
+    // At the first operator found, we split the command and recursively build subtrees.
     if(consecFirstOccurence!=-1){
         struct consec_cmd *res = malloc(sizeof(struct consec_cmd));
 
@@ -132,8 +139,8 @@ struct cmd* parse(char* command, int start, int end){
             mode = 3;
         }
 
-        while(!isSymbol(command, startOfCommand)) startOfCommand--;
-        while(!isSymbol(command, endOfFile)) endOfFile++;
+        while(!isOperator(command, startOfCommand)) startOfCommand--;
+        while(!isOperator(command, endOfFile)) endOfFile++;
 
         res->type=REDIR;
         res->command = parse(command, startOfCommand, redirectFirstOccurence-1);
@@ -164,6 +171,8 @@ struct cmd* parse(char* command, int start, int end){
                 found = true;
             }
         }
+
+        res->size = size;
 
         return (struct cmd *) res;
     }
