@@ -2,11 +2,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-
-//structures
+// structures
 #define MAXARGS 1024
 
-enum Type{
+#ifndef PARSE
+#define PARSE
+
+enum Type
+{
     EXEC,
     REDIR,
     PIPE,
@@ -14,35 +17,41 @@ enum Type{
     BACK
 };
 
-struct cmd{
+struct cmd
+{
     enum Type type;
 };
 
-struct exec_cmd{
+struct exec_cmd
+{
     enum Type type;
     char *argv[MAXARGS];
     char *eargv[MAXARGS];
     int size;
 };
 
-struct pipe_cmd {
+struct pipe_cmd
+{
     enum Type type;
     struct cmd *left;
     struct cmd *right;
 };
 
-struct consec_cmd{
+struct consec_cmd
+{
     enum Type type;
     struct cmd *left;
-    struct cmd * right;
+    struct cmd *right;
 };
 
-struct background_cmd{
+struct background_cmd
+{
     int type;
     struct cmd *command;
 };
 
-struct redirect_cmd{
+struct redirect_cmd
+{
     enum Type type;
     struct cmd *command;
     char *file;
@@ -51,9 +60,10 @@ struct redirect_cmd{
     int fd;
 };
 
-//constructors
+// constructors
 
-struct consec_cmd *consecCtor(struct cmd* left, struct cmd* right){
+struct consec_cmd *consecCtor(struct cmd *left, struct cmd *right)
+{
     struct consec_cmd *node = malloc(sizeof(struct consec_cmd));
     node->type = CONSEC;
     node->left = left;
@@ -62,7 +72,8 @@ struct consec_cmd *consecCtor(struct cmd* left, struct cmd* right){
     return node;
 }
 
-struct pipe_cmd *pipeCtor(struct cmd* left, struct cmd* right){
+struct pipe_cmd *pipeCtor(struct cmd *left, struct cmd *right)
+{
     struct pipe_cmd *node = malloc(sizeof(struct pipe_cmd));
     node->type = PIPE;
     node->left = left;
@@ -71,7 +82,8 @@ struct pipe_cmd *pipeCtor(struct cmd* left, struct cmd* right){
     return node;
 }
 
-struct background_cmd *backgroundCtor(struct cmd* command){
+struct background_cmd *backgroundCtor(struct cmd *command)
+{
     struct background_cmd *node = malloc(sizeof(struct background_cmd));
     node->type = BACK;
     node->command = command;
@@ -79,42 +91,73 @@ struct background_cmd *backgroundCtor(struct cmd* command){
     return node;
 }
 
-struct exec_cmd *execCtor(){
-        struct exec_cmd *node = malloc(sizeof(struct exec_cmd));
-        node->type = EXEC;
-        node->size = 0;
+struct exec_cmd *execDefaultCtor()
+{
+    struct exec_cmd *node = malloc(sizeof(struct exec_cmd));
+    node->type = EXEC;
+    node->size = 0;
 
-        return node;
+    return node;
 }
 
-struct redirect_cmd *redirectCtor(struct cmd *command, char *file, char *efile, int mode, int fd){
-        struct redirect_cmd *node = malloc(sizeof(struct redirect_cmd));
+struct exec_cmd *execCtor(char *commandString, int size)
+{
+    struct exec_cmd *node = malloc(sizeof(struct exec_cmd));
+    node->type = EXEC;
+    node->size = 0;
+    bool found = true;
 
-        node->command = command;
-        node->file = file;
-        node->efile = efile;
-        node->mode = mode;
-        node->fd = fd;
+    int start = 0;
 
-        return node;
+    while (commandString[start] == ' ')
+        start++;
+
+    node->argv[0] = &commandString[start];
+    node->size++;
+
+    for (; start < size; start++)
+    {
+        if (found && commandString[start] == ' ')
+        {
+            (node->eargv)[node->size - 1] = &commandString[start];
+            found = false;
+        }
+        else if (!found && commandString[start] != ' ')
+        {
+            (node->argv)[node->size] = &commandString[start];
+            node->size++;
+            found = true;
+        }
+    }
+
+    if (!node->eargv[node->size - 1])
+        node->eargv[node->size - 1] = &commandString[size];
+
+    return node;
 }
 
+struct redirect_cmd *redirectCtor(struct cmd *command, char *file, char *efile, int mode, int fd)
+{
+    struct redirect_cmd *node = malloc(sizeof(struct redirect_cmd));
+    node->type = REDIR;
+    node->command = command;
+    node->file = file;
+    node->efile = efile;
+    node->mode = mode;
+    node->fd = fd;
 
-//verfies if the current character is one of the operators
-bool isOperator(char* command, int index){
-    return  command[index]=='>' 
-            || command[index]=='<' 
-            || command[index]=='&'
-            || command[index]=='|'
-            || command[index]==';';
+    return node;
 }
 
-#ifndef PARSE
-#define PARSE
+// verfies if the current character is one of the operators
+bool isOperator(char *command, int index)
+{
+    return command[index] == '>' || command[index] == '<' || command[index] == '&' || command[index] == '|' || command[index] == ';';
+}
 
-
-//parses the command into a tree
-struct cmd* parse(char* command, int start, int end){
+// parses the command into a tree
+struct cmd *parse(char *commandString, int start, int end)
+{
     int currChar = start;
 
     int consecFirstOccurence = -1;
@@ -122,18 +165,26 @@ struct cmd* parse(char* command, int start, int end){
     int pipeFirstOccurence = -1;
     int redirectFirstOccurence = -1;
 
-    //iterates in the buffer from int start to int end
-    //keeps track of the first occurence of each operator
-    while(currChar<end){
-        if(command[currChar]==';'){
-            consecFirstOccurence=currChar;
+    // iterates in the buffer from int start to int end
+    // keeps track of the first occurence of each operator
+    while (currChar < end)
+    {
+        if (commandString[currChar] == ';')
+        {
+            consecFirstOccurence = currChar;
             break;
-        }else if(command[currChar]=='&' && backgroundFirstOccurence==-1){
-            backgroundFirstOccurence=currChar;
-        }else if(command[currChar]=='|' && pipeFirstOccurence==-1){
-            pipeFirstOccurence=currChar;
-        }else if((command[currChar]=='<' || command[currChar]=='>') && redirectFirstOccurence==-1){
-            redirectFirstOccurence=currChar;
+        }
+        else if (commandString[currChar] == '&' && backgroundFirstOccurence == -1)
+        {
+            backgroundFirstOccurence = currChar;
+        }
+        else if (commandString[currChar] == '|' && pipeFirstOccurence == -1)
+        {
+            pipeFirstOccurence = currChar;
+        }
+        else if ((commandString[currChar] == '<' || commandString[currChar] == '>') && redirectFirstOccurence == -1)
+        {
+            redirectFirstOccurence = currChar;
         }
 
         currChar++;
@@ -142,67 +193,121 @@ struct cmd* parse(char* command, int start, int end){
     // Build the parse tree by checking for operators in order of precedence:
     // Lowest to highest: ';' → '&' → '|' → '<'/'>' → plain exec
     // At the first operator found, we split the command and recursively build subtrees.
-    if(consecFirstOccurence!=-1){
+    if (consecFirstOccurence != -1)
+    {
+        printf("consec\n");
+        printf("%d\n", start);
+        printf("%d\n", end);
+        printf("%c\n", ' ');
 
-        return (struct cmd *) consecCtor(parse(command, start, consecFirstOccurence-1), 
-                                        parse(command, consecFirstOccurence+1, end));
+        return (struct cmd *)consecCtor(parse(commandString, start, consecFirstOccurence - 1),
+                                        parse(commandString, consecFirstOccurence + 1, end));
+    }
+    else if (backgroundFirstOccurence != -1)
+    {
+        // printf("background\n");
+        // printf("%d\n", start);
+        // printf("%d\n", end);
+        // printf("%c\n", ' ');
 
-    }else if(backgroundFirstOccurence!=-1){
+        int startOfCommand = backgroundFirstOccurence-1;
 
-        return (struct cmd *) backgroundCtor(malloc(sizeof(struct background_cmd)));
+        while (!isOperator(commandString, startOfCommand) && startOfCommand>0)
+            startOfCommand--;
 
-    }else if(pipeFirstOccurence!=-1){
+        if(isOperator(commandString, startOfCommand)) startOfCommand++;
 
-        return (struct cmd *) pipeCtor(parse(command, start, pipeFirstOccurence-1), 
-                                        parse(command, pipeFirstOccurence+1, end));
-
-    }else if(redirectFirstOccurence!=-1){
+        return (struct cmd *)backgroundCtor(parse(commandString, startOfCommand, backgroundFirstOccurence-1));
+    }
+    else if (pipeFirstOccurence != -1)
+    {
+        // printf("pipe\n");
+        // printf("%d\n", start);
+        // printf("%d\n", end);
+        // printf("%c\n", ' ');
+        return (struct cmd *)pipeCtor(parse(commandString, start, pipeFirstOccurence - 1),
+                                      parse(commandString, pipeFirstOccurence + 1, end));
+    }
+    else if (redirectFirstOccurence != -1)
+    {
+        printf("redirect\n");
+        printf("%d\n", start);
+        printf("%d\n", end);
+        printf("%c\n", ' ');
 
         int startOfFile;
-        int startOfCommand = redirectFirstOccurence;
+        int startOfCommand = redirectFirstOccurence-1;
         int endOfFile = redirectFirstOccurence;
-        bool stdin;
+        bool input;
         int mode;
 
-        if(command[redirectFirstOccurence+1]=='>'){
-            startOfFile=redirectFirstOccurence+2;
-            stdin=false;
+        if (commandString[redirectFirstOccurence + 1] == '>')
+        {
+            startOfFile = redirectFirstOccurence + 2;
+            input = false;
             mode = 1;
-        }else if(command[redirectFirstOccurence]=='>'){
-            startOfFile=redirectFirstOccurence+1;
-            stdin=false;
+        }
+        else if (commandString[redirectFirstOccurence] == '>')
+        {
+            startOfFile = redirectFirstOccurence + 1;
+            input = false;
             mode = 2;
-        }else{
-            startOfFile=redirectFirstOccurence+1;
-            stdin=true;   
+        }
+        else
+        {
+            startOfFile = redirectFirstOccurence + 1;
+            input = true;
             mode = 3;
         }
 
-        while(!isOperator(command, startOfCommand)) startOfCommand--;
-        while(!isOperator(command, endOfFile)) endOfFile++;
+        while (!isOperator(commandString, startOfCommand) && startOfCommand>0)
+            startOfCommand--;
+        while (!isOperator(commandString, endOfFile))
+            endOfFile++;
 
-        return (struct cmd *) redirectCtor(command, startOfFile, endOfFile, mode, stdin);
+        if(isOperator(commandString, startOfCommand)) startOfCommand++;
 
-    }else{
-        struct exec_cmd *res = execCtor();
+        int fd = 1;
+
+        if (input)
+            fd = 0;
+
+        struct cmd *command = parse(commandString, startOfCommand, redirectFirstOccurence - 1);
+        return (struct cmd *)redirectCtor(command, &commandString[startOfFile], &commandString[endOfFile], mode, fd);
+    }
+    else
+    {
+        printf("exec\n");
+        printf("%d\n", start);
+        printf("%d\n", end);
+        printf("%c\n", ' ');
+        struct exec_cmd *execNode = execDefaultCtor();
         bool found = true;
 
-        while(command[start]==' ') start++;
-        (res->argv)[0]=&command[start];
-        res->size++;
+        while (commandString[start] == ' ')
+            start++;
 
-        for(; start<end; start++){
-            if(found && command[start]==' '){
-                ((res->eargv))[res->size]=&command[start];
+        execNode->argv[0] = &commandString[start];
+        execNode->size++;
+
+        for (; start < end; start++)
+        {
+            if (found && (commandString[start] == ' ' || isOperator(commandString, start)))
+            {
                 found = false;
-            }else if(!found && command[start]!=' '){
-                ((res->argv))[res->size]=&command[start];
-                res->size++;
+                ((execNode->eargv))[execNode->size - 1] = &commandString[start];
+            }
+            else if (!found && commandString[start] != ' ')
+            {
+                ((execNode->argv))[execNode->size] = &commandString[start];
                 found = true;
+                execNode->size++;
             }
         }
 
-        return (struct cmd *) res;
+        if (!execNode->eargv[execNode->size - 1])
+            execNode->eargv[execNode->size - 1] = &commandString[end];
+        return (struct cmd *)execNode;
     }
 }
 
