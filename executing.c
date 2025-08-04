@@ -106,15 +106,21 @@ void executeCmd(struct cmd *node)
         {
             int fileDescriptor;
 
-            if(redirectNode->fd==1){
-                if(redirectNode->mode == 1){
+            if (redirectNode->fd == 1)
+            {
+                if (redirectNode->mode == 1)
+                {
                     fileDescriptor = open(redirectNode->file, O_WRONLY | O_CREAT | O_APPEND, 0644);
-                }else{
+                }
+                else
+                {
                     fileDescriptor = open(redirectNode->file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
                 }
 
                 dup2(fileDescriptor, STDOUT_FILENO);
-            }else{
+            }
+            else
+            {
                 fileDescriptor = open(redirectNode->file, O_RDONLY);
                 dup2(fileDescriptor, STDIN_FILENO);
             }
@@ -123,6 +129,26 @@ void executeCmd(struct cmd *node)
             executeCmd(redirectNode->command);
             exit(0);
         }
+        break;
+    }
+    case EXEC:
+    {
+        struct exec_cmd *execNode = (struct exec_cmd *)node;
+
+        char *command = execNode->argv[0];
+        char fullPath[256];
+        snprintf(fullPath, sizeof(fullPath), "./commandsImplementations/%s", command);
+
+        pid_t pid = fork();
+
+        if(pid == 0){
+            execvp(fullPath, execNode->argv);
+
+            perror("execvp failed\n");
+            exit(1);
+        }
+
+        wait(&pid);
 
     }
     }

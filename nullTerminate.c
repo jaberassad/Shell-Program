@@ -37,14 +37,11 @@ bool nullTerminate(struct cmd *node)
     {
         struct exec_cmd *execNode = (struct exec_cmd *)node;
 
-        printf("%d\n", execNode->size);
-
         for (int i = 0; i < execNode->size; i++)
         {
             if (execNode->eargv[i] == NULL)
                 continue;
             *(execNode->eargv[i]) = '\0';
-            printf("%s\n", execNode->argv[i]);
         }
 
         break;

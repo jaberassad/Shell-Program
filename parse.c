@@ -210,14 +210,15 @@ struct cmd *parse(char *commandString, int start, int end)
         // printf("%d\n", end);
         // printf("%c\n", ' ');
 
-        int startOfCommand = backgroundFirstOccurence-1;
+        int startOfCommand = backgroundFirstOccurence - 1;
 
-        while (!isOperator(commandString, startOfCommand) && startOfCommand>0)
+        while (!isOperator(commandString, startOfCommand) && startOfCommand > 0)
             startOfCommand--;
 
-        if(isOperator(commandString, startOfCommand)) startOfCommand++;
+        if (isOperator(commandString, startOfCommand))
+            startOfCommand++;
 
-        return (struct cmd *)backgroundCtor(parse(commandString, startOfCommand, backgroundFirstOccurence-1));
+        return (struct cmd *)backgroundCtor(parse(commandString, startOfCommand, backgroundFirstOccurence - 1));
     }
     else if (pipeFirstOccurence != -1)
     {
@@ -230,13 +231,13 @@ struct cmd *parse(char *commandString, int start, int end)
     }
     else if (redirectFirstOccurence != -1)
     {
-        printf("redirect\n");
-        printf("%d\n", start);
-        printf("%d\n", end);
-        printf("%c\n", ' ');
+        // printf("redirect\n");
+        // printf("%d\n", start);
+        // printf("%d\n", end);
+        // printf("%c\n", ' ');
 
         int startOfFile;
-        int startOfCommand = redirectFirstOccurence-1;
+        int startOfCommand = redirectFirstOccurence - 1;
         int endOfFile = redirectFirstOccurence;
         bool input;
         int mode;
@@ -260,12 +261,13 @@ struct cmd *parse(char *commandString, int start, int end)
             mode = 3;
         }
 
-        while (!isOperator(commandString, startOfCommand) && startOfCommand>0)
+        while (!isOperator(commandString, startOfCommand) && startOfCommand > 0)
             startOfCommand--;
         while (!isOperator(commandString, endOfFile))
             endOfFile++;
 
-        if(isOperator(commandString, startOfCommand)) startOfCommand++;
+        if (isOperator(commandString, startOfCommand))
+            startOfCommand++;
 
         int fd = 1;
 
@@ -277,10 +279,10 @@ struct cmd *parse(char *commandString, int start, int end)
     }
     else
     {
-        printf("exec\n");
-        printf("%d\n", start);
-        printf("%d\n", end);
-        printf("%c\n", ' ');
+        // printf("exec\n");
+        // printf("%d\n", start);
+        // printf("%d\n", end);
+        // printf("%c\n", ' ');
         struct exec_cmd *execNode = execDefaultCtor();
         bool found = true;
 
