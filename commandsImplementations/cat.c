@@ -36,6 +36,9 @@ void cat(char *fileName)
 
 int main(int argc, char *argv[])
 {
-    cat(argv[1]);
+    for(int i = 1; argv[i]; i++) {
+        cat(argv[i]);
+        printf("%c\n", ' ');
+    }
     return 0;
 }
