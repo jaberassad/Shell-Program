@@ -1,3 +1,5 @@
+#include "parse.c"
+
 bool nullTerminate(struct cmd *node)
 {
     switch (node->type)
@@ -32,7 +34,6 @@ bool nullTerminate(struct cmd *node)
         nullTerminate(redirectNode->command);
         break;
     }
-
     case EXEC:
     {
         struct exec_cmd *execNode = (struct exec_cmd *)node;
@@ -43,6 +44,13 @@ bool nullTerminate(struct cmd *node)
                 continue;
             *(execNode->eargv[i]) = '\0';
         }
+
+        break;
+    }
+    case BLOCK:
+    {
+        struct block_cmd *blockNode = (struct block_cmd *)node;
+        nullTerminate(blockNode->command);
 
         break;
     }

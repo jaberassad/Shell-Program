@@ -14,7 +14,8 @@ enum Type
     REDIR,
     PIPE,
     CONSEC,
-    BACK
+    BACK,
+    BLOCK
 };
 
 struct cmd
@@ -60,6 +61,12 @@ struct redirect_cmd
     int fd;
 };
 
+struct block_cmd
+{
+    enum Type type;
+    struct cmd *command;
+};
+
 // constructors
 
 struct consec_cmd *consecCtor(struct cmd *left, struct cmd *right)
@@ -86,6 +93,15 @@ struct background_cmd *backgroundCtor(struct cmd *command)
 {
     struct background_cmd *node = malloc(sizeof(struct background_cmd));
     node->type = BACK;
+    node->command = command;
+
+    return node;
+}
+
+struct block_cmd *blockCtor(struct cmd *command)
+{
+    struct block_cmd *node = malloc(sizeof(struct block_cmd));
+    node->type = BLOCK;
     node->command = command;
 
     return node;
@@ -164,15 +180,28 @@ struct cmd *parse(char *commandString, int start, int end)
     int backgroundFirstOccurence = -1;
     int pipeFirstOccurence = -1;
     int redirectFirstOccurence = -1;
+    int parenthesisFirstOccurence = -1;
+    
+    bool inOpenParenthesis = false;
 
     // iterates in the buffer from int start to int end
     // keeps track of the first occurence of each operator
     while (currChar < end)
-    {
-        if (commandString[currChar] == ';')
+    {      
+        if(inOpenParenthesis && commandString[currChar] != ')' ){
+            currChar++;
+            continue;
+        }else if(inOpenParenthesis){
+            inOpenParenthesis = false;
+        }
+
+        if(!inOpenParenthesis && commandString[currChar] == '('){
+            if(parenthesisFirstOccurence == -1) parenthesisFirstOccurence = currChar;
+            inOpenParenthesis = true;
+        }
+        else if (commandString[currChar] == ';' && consecFirstOccurence == -1)
         {
             consecFirstOccurence = currChar;
-            break;
         }
         else if (commandString[currChar] == '&' && backgroundFirstOccurence == -1)
         {
@@ -190,26 +219,29 @@ struct cmd *parse(char *commandString, int start, int end)
         currChar++;
     }
 
+
+    if (consecFirstOccurence == -1 &&
+    backgroundFirstOccurence == -1 &&
+    pipeFirstOccurence == -1 &&
+    redirectFirstOccurence == -1 &&
+    parenthesisFirstOccurence != -1){
+        while(commandString[start] == ' ') start++;
+        while(commandString[end]==' ' || commandString[end]=='\0') end--;
+
+        return (struct cmd *)blockCtor(parse(commandString, start+1, end));
+    }
+
     // Build the parse tree by checking for operators in order of precedence:
     // Lowest to highest: ';' → '&' → '|' → '<'/'>' → plain exec
     // At the first operator found, we split the command and recursively build subtrees.
     if (consecFirstOccurence != -1)
     {
-        printf("consec\n");
-        printf("%d\n", start);
-        printf("%d\n", end);
-        printf("%c\n", ' ');
 
         return (struct cmd *)consecCtor(parse(commandString, start, consecFirstOccurence - 1),
                                         parse(commandString, consecFirstOccurence + 1, end));
     }
     else if (backgroundFirstOccurence != -1)
     {
-        // printf("background\n");
-        // printf("%d\n", start);
-        // printf("%d\n", end);
-        // printf("%c\n", ' ');
-
         int startOfCommand = backgroundFirstOccurence - 1;
 
         while (!isOperator(commandString, startOfCommand) && startOfCommand > 0)
@@ -222,20 +254,11 @@ struct cmd *parse(char *commandString, int start, int end)
     }
     else if (pipeFirstOccurence != -1)
     {
-        // printf("pipe\n");
-        // printf("%d\n", start);
-        // printf("%d\n", end);
-        // printf("%c\n", ' ');
         return (struct cmd *)pipeCtor(parse(commandString, start, pipeFirstOccurence - 1),
                                       parse(commandString, pipeFirstOccurence + 1, end));
     }
     else if (redirectFirstOccurence != -1)
     {
-        // printf("redirect\n");
-        // printf("%d\n", start);
-        // printf("%d\n", end);
-        // printf("%c\n", ' ');
-
         int startOfFile;
         int startOfCommand = redirectFirstOccurence - 1;
         int endOfFile = redirectFirstOccurence;
@@ -279,10 +302,6 @@ struct cmd *parse(char *commandString, int start, int end)
     }
     else
     {
-        // printf("exec\n");
-        // printf("%d\n", start);
-        // printf("%d\n", end);
-        // printf("%c\n", ' ');
         struct exec_cmd *execNode = execDefaultCtor();
         bool found = true;
 

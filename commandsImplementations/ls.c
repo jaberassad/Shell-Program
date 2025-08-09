@@ -3,7 +3,15 @@
 #include <errno.h>
 
 int main(int argc, char *argv[]) {
-    const char *path = argv[1];
+
+    const char *path;
+
+    if (argc < 2) {
+        path = ".";
+    } else {
+        path = argv[1];
+    }
+
     struct dirent *entry;
     DIR *dir = opendir(path);
 

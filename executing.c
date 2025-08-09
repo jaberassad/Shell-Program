@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+
 void executeCmd(struct cmd *node)
 {
 
@@ -18,7 +19,7 @@ void executeCmd(struct cmd *node)
     {
         struct pipe_cmd *pipeNode = (struct pipe_cmd *)node;
         int pipefd[2];
-        pipe(pipefd);
+
 
         if (pipe(pipefd) == -1)
         {
@@ -27,7 +28,6 @@ void executeCmd(struct cmd *node)
         }
 
         pid_t pid1 = fork();
-
         if (pid1 == -1)
         {
             perror("fork");
@@ -93,9 +93,11 @@ void executeCmd(struct cmd *node)
     }
     case REDIR:
     {
-        struct redirect_cmd *redirectNode = (struct redirect_cmd *)redirectNode;
+        struct redirect_cmd *redirectNode = (struct redirect_cmd *)node;
 
         pid_t pid = fork();
+
+        while(*(redirectNode->file)==' ') redirectNode->file++;
 
         if (pid == -1)
         {
@@ -105,7 +107,6 @@ void executeCmd(struct cmd *node)
         else if (pid == 0)
         {
             int fileDescriptor;
-
             if (redirectNode->fd == 1)
             {
                 if (redirectNode->mode == 1)
@@ -116,11 +117,11 @@ void executeCmd(struct cmd *node)
                 {
                     fileDescriptor = open(redirectNode->file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
                 }
-
                 dup2(fileDescriptor, STDOUT_FILENO);
             }
             else
             {
+                printf("%s\n", ((struct exec_cmd *)redirectNode->command)->argv[0]);
                 fileDescriptor = open(redirectNode->file, O_RDONLY);
                 dup2(fileDescriptor, STDIN_FILENO);
             }
@@ -129,6 +130,12 @@ void executeCmd(struct cmd *node)
             executeCmd(redirectNode->command);
             exit(0);
         }
+        break;
+    }
+    case BLOCK:{
+        struct block_cmd *blockNode = (struct block_cmd *)node;
+        executeCmd(blockNode->command);
+
         break;
     }
     case EXEC:
@@ -141,15 +148,15 @@ void executeCmd(struct cmd *node)
 
         pid_t pid = fork();
 
-        if(pid == 0){
+        if (pid == 0)
+        {
             execvp(fullPath, execNode->argv);
 
-            perror("execvp failed\n");
+            perror("Invalid Command\n");
             exit(1);
         }
 
         wait(&pid);
-
     }
     }
 }
