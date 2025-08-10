@@ -2,11 +2,10 @@
 #include <stdio.h>
 #include <fcntl.h>
 
-int main(int argc, char *string[])
-{
-
-    for (int i = 1; string[i]; i++)
-        printf("%s ", string[i]);
+int echo(char *strings[])
+{    
+    for (int i = 1; strings[i]; i++)
+        printf("%s ", strings[i]);
     printf("%c\n", ' ');
 
     return 0;

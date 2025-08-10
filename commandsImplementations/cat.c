@@ -3,15 +3,17 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
-#include <stdlib.h> 
+#include <stdlib.h>
+#include "../cmd_utils.c"
 
 #define MAXARGS 1024
 
-void cat(char *fileName)
+void helper(char *fileName)
 {
 
     int fileDescriptor = open(fileName, O_RDONLY);
-    if (fileDescriptor < 0) {
+    if (fileDescriptor < 0)
+    {
         fprintf(stderr, "cat: can't open %s: %s\n", fileName, strerror(errno));
         return;
     }
@@ -34,10 +36,16 @@ void cat(char *fileName)
     close(fileDescriptor);
 }
 
-int main(int argc, char *argv[])
+int cat(char *argv[])
 {
-    for(int i = 1; argv[i]; i++) {
-        cat(argv[i]);
+    if (!argv[1])
+    {
+        printf("%s\n", readStdin());
+    }
+
+    for (int i = 1; argv[i]; i++)
+    {
+        helper(argv[i]);
         printf("%c\n", ' ');
     }
     return 0;

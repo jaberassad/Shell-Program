@@ -8,14 +8,36 @@
 #include <signal.h>
 
 
+bool isCdCommand(int start, int end, char *commandString){
+
+    while(commandString[start]==' ') start++;
+    while(commandString[end]==';' || commandString[end]==' ' || commandString[end]=='\n' || commandString[end]=='\0') end--;
+
+    if(end-start+1<2 || commandString[start]!='c' || commandString[start+1]!='d' || (end-start+1>2 && commandString[start+2]!=' ')){
+        return false;
+    }
+
+    if(end-start+1>2){
+        start = start + 3;
+        while(commandString[start]==' ') start++;
+        commandString[end+1]='\0';
+        chdir(&commandString[start]);
+    }
+
+    return true;
+}
+
 int main(void){
     char line[1024];
-    
-    fflush(stdout);
-    
-    char prompt[] = "myshell>";
+
+    char cwd[PATH_MAX];
+    char prompt[PATH_MAX + 20];
     
     while(1){
+        getcwd(cwd, sizeof(cwd));
+        strcpy(prompt, cwd);
+        strcat(prompt, " myshell>");
+        
         write(2, prompt, strlen(prompt));
         if(fgets(line, 1024, stdin)==NULL){
             break;
@@ -25,10 +47,24 @@ int main(void){
         if (len > 0 && line[len - 1] == '\n') {
             line[len - 1] = '\0';
         }
-        
-        struct cmd* command = parse(line, 0, strlen(line));
-        nullTerminate(command);
-        executeCmd(command);
+
+        bool openedParenthesis = 0;
+        int currIndex = 0;
+        int lastEncounter = -1;
+
+        while(currIndex<len){
+            if((openedParenthesis==0 && line[currIndex]==';') || (currIndex==len-1)){
+                if(!isCdCommand(lastEncounter+1, currIndex, line)){
+                    printf("%s\n", &line[currIndex]);
+                    struct cmd* command = parse(line, lastEncounter+1, currIndex);
+                    nullTerminate(command);
+                    executeCmd(command);
+                }
+                lastEncounter = currIndex;
+            }else if(currIndex=='(') openedParenthesis++;
+            else if(currIndex==')') openedParenthesis--;
+            currIndex++;
+        }
     }
     
     return 0;

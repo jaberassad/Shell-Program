@@ -1,5 +1,10 @@
 #include "parse.c"
 #include <string.h>
+#include <unistd.h>
+#include <ctype.h>
+
+#ifndef CMD_UTILS
+#define CMD_UTILS 
 
 // will be used in tests to see if the returned node is equal to the expected
 bool equalNodes(struct cmd *node1, struct cmd *node2)
@@ -36,6 +41,13 @@ bool equalNodes(struct cmd *node1, struct cmd *node2)
         struct redirect_cmd *redirectNode1 = (struct redirect_cmd *)node1;
         struct redirect_cmd *redirectNode2 = (struct redirect_cmd *)node2;
         return equalNodes(redirectNode1->command, redirectNode2->command) && strcmp(redirectNode1->file, redirectNode2->file) == 0 && redirectNode1->mode == redirectNode2->mode && redirectNode1->fd == redirectNode2->fd;
+    }
+
+    case BLOCK:{
+        struct block_cmd * blockNode1 = (struct block_cmd *)node1;
+        struct block_cmd * blockNode2 = (struct block_cmd *)node2;      
+        
+        return equalNodes(blockNode1->command, blockNode2->command);
     }
 
     case EXEC:
@@ -97,6 +109,12 @@ void freeCmd(struct cmd *c)
         free(bg);
         break;
     }
+    case BLOCK:{
+        struct block_cmd *block = (struct block_cmd *)c;
+        freeCmd(block->command);
+        free(block);
+        break;
+    }
     case REDIR:
     {
         struct redirect_cmd *redir = (struct redirect_cmd *)c;
@@ -106,3 +124,18 @@ void freeCmd(struct cmd *c)
     }
     }
 }
+
+char *readStdin() {
+    static char buf[1024];
+    ssize_t n = read(STDIN_FILENO, buf, sizeof(buf));
+
+    int len = strlen(buf);
+    while (len > 0 && isspace((unsigned char)buf[len - 1])) {
+        buf[len - 1] = '\0';
+        len--;
+    }    
+
+    return buf;
+}
+
+#endif

@@ -1,7 +1,24 @@
 #include "parse.c"
 #include <unistd.h>
 #include <fcntl.h>
+#include "commandsImplementations/echo.c"
+#include "commandsImplementations/cat.c"
+#include "commandsImplementations/ls.c"
+#include "commandsImplementations/sleep.c"
 
+void exec(char *argv[])
+{
+    char *cmdName = argv[0];
+
+    if (strcmp(cmdName, "echo")==0)
+        echo(argv);
+    else if (strcmp(cmdName, "cat")==0)
+        cat(argv);
+    else if (strcmp(cmdName, "ls")==0)
+        ls(argv);
+    else if (strcmp(cmdName, "sleep")==0)
+        sleep_(argv);
+}
 
 void executeCmd(struct cmd *node)
 {
@@ -19,7 +36,6 @@ void executeCmd(struct cmd *node)
     {
         struct pipe_cmd *pipeNode = (struct pipe_cmd *)node;
         int pipefd[2];
-
 
         if (pipe(pipefd) == -1)
         {
@@ -97,7 +113,8 @@ void executeCmd(struct cmd *node)
 
         pid_t pid = fork();
 
-        while(*(redirectNode->file)==' ') redirectNode->file++;
+        while (*(redirectNode->file) == ' ')
+            redirectNode->file++;
 
         if (pid == -1)
         {
@@ -132,7 +149,8 @@ void executeCmd(struct cmd *node)
         }
         break;
     }
-    case BLOCK:{
+    case BLOCK:
+    {
         struct block_cmd *blockNode = (struct block_cmd *)node;
         executeCmd(blockNode->command);
 
@@ -142,18 +160,12 @@ void executeCmd(struct cmd *node)
     {
         struct exec_cmd *execNode = (struct exec_cmd *)node;
 
-        char *command = execNode->argv[0];
-        char fullPath[256];
-        snprintf(fullPath, sizeof(fullPath), "./commandsImplementations/%s", command);
-
         pid_t pid = fork();
 
         if (pid == 0)
         {
-            execvp(fullPath, execNode->argv);
-
-            perror("Invalid Command\n");
-            exit(1);
+            exec(execNode->argv);
+            exit(0);
         }
 
         wait(&pid);

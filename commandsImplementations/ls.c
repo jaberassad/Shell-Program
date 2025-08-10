@@ -2,11 +2,11 @@
 #include <dirent.h>
 #include <errno.h>
 
-int main(int argc, char *argv[]) {
+int ls(char *argv[]) {
 
     const char *path;
 
-    if (argc < 2) {
+    if (!argv[1]) {
         path = ".";
     } else {
         path = argv[1];
