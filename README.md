@@ -4,7 +4,7 @@
 It supports command execution, piping, redirection, background jobs, and grouping commands with parentheses.  
 The shell is built from scratch with **subprocessing**, **file descriptor manipulation** (I/O management for pipes & redirections), and heavy use of **recursive programming** for command parsing and execution.
 
-![Alt text](./Shell Picture.png)
+![Alt text](./ShellPicture.png)
 
 ---
 
