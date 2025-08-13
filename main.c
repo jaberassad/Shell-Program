@@ -8,6 +8,20 @@
 #include <signal.h>
 #include "cmd_utils.c"
 
+char *banner =
+"   $$$$$\\           $$\\                         $$\\                $$$$$$\\  $$\\                 $$\\ $$\\ \n"
+"   \\__$$ |          $$ |                        $  |              $$  __$$\\ $$ |                $$ |$$ |\n"
+"      $$ | $$$$$$\\  $$$$$$$\\   $$$$$$\\   $$$$$$\\\\_/$$$$$$$\\       $$ /  \\__|$$$$$$$\\   $$$$$$\\  $$ |$$ |\n"
+"      $$ | \\____$$\\ $$  __$$\\ $$  __$$\\ $$  __$$\\ $$  _____|      \\$$$$$$\\  $$  __$$\\ $$  __$$\\ $$ |$$ |\n"
+"$$\\   $$ | $$$$$$$ |$$ |  $$ |$$$$$$$$ |$$ |  \\__|\\$$$$$$\\         \\____$$\\ $$ |  $$ |$$$$$$$$ |$$ |$$ |\n"
+"$$ |  $$ |$$  __$$ |$$ |  $$ |$$   ____|$$ |       \\____$$\\       $$\\   $$ |$$ |  $$ |$$   ____|$$ |$$ |\n"
+"\\$$$$$$  |\\$$$$$$$ |$$$$$$$  |\\$$$$$$$\\ $$ |      $$$$$$$  |      \\$$$$$$  |$$ |  $$ |\\$$$$$$$\\ $$ |$$ |\n"
+" \\______/  \\_______|\\_______/  \\_______|\\__|      \\_______/        \\______/ \\__|  \\__| \\_______|\\__|\\__|\n";
+
+
+                                                                                                                                                        
+                                                                                                                                                        
+
 
 bool isCdCommand(int start, int end, char *commandString){
 
@@ -29,6 +43,20 @@ bool isCdCommand(int start, int end, char *commandString){
 }
 
 int main(void){
+    printf("%s\n", banner);
+    printf("Welcome to Jaber's Shell!\n");
+    printf("Supported features:\n");
+    printf("  - Command grouping with parentheses: ( )\n");
+    printf("  - Redirections: <  >  >>\n");
+    printf("  - Background execution: &\n");
+    printf("  - Pipes: |\n");
+    printf("  - Command chaining: ;\n");
+    printf("Built-in commands:\n");
+    printf("  cd  cat  grep  mkdir  rmdir  mv  ls  sleep  echo\n");
+    printf("%c\n", ' ');
+    printf("%c\n", ' ');
+    printf("%c\n", ' ');
+
     char line[1024];
 
     char cwd[PATH_MAX];

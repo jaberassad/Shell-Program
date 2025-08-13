@@ -31,12 +31,6 @@ int rmdir_(char *argv[]) {
 }
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <errno.h>
 
 int mv_(char *argv[]) {
     // Check argument count
