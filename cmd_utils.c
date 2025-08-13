@@ -172,7 +172,7 @@ bool checkSyntax(const char *cmd) {
             lastWasOp = false;
             lastWasParenOpen = false;
         }
-        else if (c == '|' || c == ';' || c == '&') {
+        else if (c == '|' || c == ';') {
             if (lastWasOp) {
                 fprintf(stderr, "syntax error: unexpected '%c'\n", c);
                 return false;
