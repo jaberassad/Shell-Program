@@ -37,7 +37,7 @@ int main(void){
         getcwd(cwd, sizeof(cwd));
         strcpy(prompt, cwd);
         strcat(prompt, " myshell>");
-        
+
         write(2, prompt, strlen(prompt));
         if(fgets(line, 1024, stdin)==NULL){
             break;
@@ -48,23 +48,29 @@ int main(void){
             line[len - 1] = '\0';
         }
 
-        bool openedParenthesis = 0;
+        int openedParenthesis = 0;
         int currIndex = 0;
         int lastEncounter = -1;
 
         while(currIndex<len){
             if((openedParenthesis==0 && line[currIndex]==';') || (currIndex==len-1)){
                 if(!isCdCommand(lastEncounter+1, currIndex, line)){
-                    printf("%s\n", &line[currIndex]);
-                    struct cmd* command = parse(line, lastEncounter+1, currIndex);
+                    int end;
+
+                    if(line[currIndex]==';') end = currIndex-1;
+                    else end = currIndex;
+
+                    struct cmd* command = parse(line, lastEncounter+1, end);
                     nullTerminate(command);
                     executeCmd(command);
                 }
                 lastEncounter = currIndex;
-            }else if(currIndex=='(') openedParenthesis++;
-            else if(currIndex==')') openedParenthesis--;
+            }else if(line[currIndex]=='(') openedParenthesis++;
+            else if(line[currIndex]==')') openedParenthesis--;
             currIndex++;
         }
+
+        usleep(500000);
     }
     
     return 0;

@@ -5,7 +5,7 @@
 
 int sleep_(char *argv[]){
     
-    if(!argv[1]) printf("No Argument Given\n");
+    if(!argv[1]) fprintf(stderr, "No Arguments given\n");
     sleep(atoi(argv[1]));
 
     return 0;

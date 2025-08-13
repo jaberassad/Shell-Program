@@ -6,7 +6,7 @@ int echo(char *strings[])
 {    
     for (int i = 1; strings[i]; i++)
         printf("%s ", strings[i]);
-    printf("%c\n", ' ');
 
+    printf("%c\n", ' ');
     return 0;
 }

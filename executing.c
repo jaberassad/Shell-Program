@@ -5,11 +5,15 @@
 #include "commandsImplementations/cat.c"
 #include "commandsImplementations/ls.c"
 #include "commandsImplementations/sleep.c"
+#include "commandsImplementations/fileManagment.c"
+#include "commandsImplementations/grep.c"
+#include "commandsImplementations/wc.c"
+#include "commandsImplementations/cd.c"
 
 void exec(char *argv[])
 {
     char *cmdName = argv[0];
-
+    
     if (strcmp(cmdName, "echo")==0)
         echo(argv);
     else if (strcmp(cmdName, "cat")==0)
@@ -18,6 +22,22 @@ void exec(char *argv[])
         ls(argv);
     else if (strcmp(cmdName, "sleep")==0)
         sleep_(argv);
+    else if (strcmp(cmdName, "mkdir")==0)
+        mkdir_(argv);
+    else if (strcmp(cmdName, "rmdir")==0)
+        rmdir_(argv);
+    else if (strcmp(cmdName, "mv")==0)
+        mv_(argv);
+    else if (strcmp(cmdName, "grep")==0)
+        grep(argv);
+    else if (strcmp(cmdName, "wc")==0)
+        wc(argv);
+    else if (strcmp(cmdName, "cd")==0)
+        cd_(argv);
+    else{ 
+        write(2, "Invalid Command\n", 16);
+        exit(1);
+    }
 }
 
 void executeCmd(struct cmd *node)
@@ -102,7 +122,7 @@ void executeCmd(struct cmd *node)
         }
         else
         {
-            printf("[Background pid %d]\n", pid);
+            fprintf(stderr, "[Background pid %d]\n", pid);
         }
 
         break;
@@ -115,6 +135,7 @@ void executeCmd(struct cmd *node)
 
         while (*(redirectNode->file) == ' ')
             redirectNode->file++;
+
 
         if (pid == -1)
         {
@@ -138,7 +159,6 @@ void executeCmd(struct cmd *node)
             }
             else
             {
-                printf("%s\n", ((struct exec_cmd *)redirectNode->command)->argv[0]);
                 fileDescriptor = open(redirectNode->file, O_RDONLY);
                 dup2(fileDescriptor, STDIN_FILENO);
             }
@@ -152,23 +172,22 @@ void executeCmd(struct cmd *node)
     case BLOCK:
     {
         struct block_cmd *blockNode = (struct block_cmd *)node;
-        executeCmd(blockNode->command);
 
+        pid_t pid = fork();
+
+        if(pid<0) perror("fork");
+        else if(pid==0){
+            executeCmd(blockNode->command);
+            exit(0);
+        }
+
+        wait(&pid);
         break;
     }
     case EXEC:
     {
         struct exec_cmd *execNode = (struct exec_cmd *)node;
-
-        pid_t pid = fork();
-
-        if (pid == 0)
-        {
-            exec(execNode->argv);
-            exit(0);
-        }
-
-        wait(&pid);
+        exec(execNode->argv);
     }
     }
 }

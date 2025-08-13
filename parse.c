@@ -181,25 +181,31 @@ struct cmd *parse(char *commandString, int start, int end)
     int pipeFirstOccurence = -1;
     int redirectFirstOccurence = -1;
     int parenthesisFirstOccurence = -1;
-    
-    bool inOpenParenthesis = false;
+    int openedParenthesis = 0;
+
 
     // iterates in the buffer from int start to int end
     // keeps track of the first occurence of each operator
     while (currChar < end)
-    {      
-        if(inOpenParenthesis && commandString[currChar] != ')' ){
-            currChar++;
-            continue;
-        }else if(inOpenParenthesis){
-            inOpenParenthesis = false;
+    {
+        if(commandString[currChar] == '(')
+        {
+            if (parenthesisFirstOccurence == -1)
+                parenthesisFirstOccurence = currChar;
+            openedParenthesis++;
         }
 
-        if(!inOpenParenthesis && commandString[currChar] == '('){
-            if(parenthesisFirstOccurence == -1) parenthesisFirstOccurence = currChar;
-            inOpenParenthesis = true;
+        if (openedParenthesis>0 && commandString[currChar] != ')')
+        {
+            currChar++;
+            continue;
         }
-        else if (commandString[currChar] == ';' && consecFirstOccurence == -1)
+        else if (openedParenthesis>0)
+        {
+            openedParenthesis--;
+        }
+
+        if (commandString[currChar] == ';' && consecFirstOccurence == -1)
         {
             consecFirstOccurence = currChar;
         }
@@ -219,16 +225,18 @@ struct cmd *parse(char *commandString, int start, int end)
         currChar++;
     }
 
-
     if (consecFirstOccurence == -1 &&
-    backgroundFirstOccurence == -1 &&
-    pipeFirstOccurence == -1 &&
-    redirectFirstOccurence == -1 &&
-    parenthesisFirstOccurence != -1){
-        while(commandString[start] == ' ') start++;
-        while(commandString[end]==' ' || commandString[end]=='\0') end--;
-
-        return (struct cmd *)blockCtor(parse(commandString, start+1, end));
+        backgroundFirstOccurence == -1 &&
+        pipeFirstOccurence == -1 &&
+        redirectFirstOccurence == -1 &&
+        parenthesisFirstOccurence != -1)
+    {
+        while (commandString[start] == ' ')
+            start++;
+        while (commandString[end] == ' ' || commandString[end] == '\0' || commandString[end] == '\n')
+            end--;
+        commandString[end] = '\0';
+        return (struct cmd *)blockCtor(parse(commandString, start + 1, end));
     }
 
     // Build the parse tree by checking for operators in order of precedence:
@@ -261,7 +269,7 @@ struct cmd *parse(char *commandString, int start, int end)
     {
         int startOfFile;
         int startOfCommand = redirectFirstOccurence - 1;
-        int endOfFile = redirectFirstOccurence;
+        int endOfFile = redirectFirstOccurence + 1;
         bool input;
         int mode;
 
@@ -284,12 +292,29 @@ struct cmd *parse(char *commandString, int start, int end)
             mode = 3;
         }
 
-        while (!isOperator(commandString, startOfCommand) && startOfCommand > 0)
-            startOfCommand--;
-        while (!isOperator(commandString, endOfFile))
-            endOfFile++;
+        int closedParenthesis = 0;
+
+        while ((closedParenthesis > 0) || (!isOperator(commandString, startOfCommand) && startOfCommand > 0))
+        {
+            if (commandString[startOfCommand] == ')')
+                closedParenthesis++;
+            else if (commandString[startOfCommand] == '(')
+                closedParenthesis--;
+
+            if(closedParenthesis==0 && commandString[startOfCommand]=='(') break;
+
+    
+            if (startOfCommand > 0)
+                startOfCommand--;
+        }
+
+
+        while (!isOperator(commandString, endOfFile)) endOfFile++;
 
         if (isOperator(commandString, startOfCommand))
+            startOfCommand++;
+
+        if (startOfCommand == '(')
             startOfCommand++;
 
         int fd = 1;
