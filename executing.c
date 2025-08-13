@@ -155,11 +155,20 @@ void executeCmd(struct cmd *node)
                 {
                     fileDescriptor = open(redirectNode->file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
                 }
+
+                if (fileDescriptor == -1) {
+                    perror("open output file");
+                    exit(1);
+                }
                 dup2(fileDescriptor, STDOUT_FILENO);
             }
             else
             {
                 fileDescriptor = open(redirectNode->file, O_RDONLY);
+                if (fileDescriptor == -1) {
+                    perror("open output file");
+                    exit(1);
+                }
                 dup2(fileDescriptor, STDIN_FILENO);
             }
 

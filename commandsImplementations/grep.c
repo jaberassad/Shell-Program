@@ -48,6 +48,5 @@ int grep(char *argv[])
         fclose(fp);
     }
 
-    fprintf(stderr, "%s\n", "grep does return");
     return 0;
 }

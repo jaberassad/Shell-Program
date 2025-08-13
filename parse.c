@@ -183,24 +183,23 @@ struct cmd *parse(char *commandString, int start, int end)
     int parenthesisFirstOccurence = -1;
     int openedParenthesis = 0;
 
-
     // iterates in the buffer from int start to int end
     // keeps track of the first occurence of each operator
     while (currChar < end)
     {
-        if(commandString[currChar] == '(')
+        if (commandString[currChar] == '(')
         {
             if (parenthesisFirstOccurence == -1)
                 parenthesisFirstOccurence = currChar;
             openedParenthesis++;
         }
 
-        if (openedParenthesis>0 && commandString[currChar] != ')')
+        if (openedParenthesis > 0 && commandString[currChar] != ')')
         {
             currChar++;
             continue;
         }
-        else if (openedParenthesis>0)
+        else if (openedParenthesis > 0)
         {
             openedParenthesis--;
         }
@@ -301,15 +300,24 @@ struct cmd *parse(char *commandString, int start, int end)
             else if (commandString[startOfCommand] == '(')
                 closedParenthesis--;
 
-            if(closedParenthesis==0 && commandString[startOfCommand]=='(') break;
+            if (closedParenthesis == 0 && commandString[startOfCommand] == '(')
+                break;
 
-    
             if (startOfCommand > 0)
                 startOfCommand--;
         }
 
+        while (!isOperator(commandString, endOfFile))
+            endOfFile++;
 
-        while (!isOperator(commandString, endOfFile)) endOfFile++;
+        if (commandString[endOfFile - 1] == ' ')
+        {
+            endOfFile--;
+
+            while (commandString[endOfFile] == ' ')
+                endOfFile--;
+            endOfFile++;
+        }
 
         if (isOperator(commandString, startOfCommand))
             startOfCommand++;
