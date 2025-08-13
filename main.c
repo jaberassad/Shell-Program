@@ -65,7 +65,7 @@ int main(void){
     while(1){
         getcwd(cwd, sizeof(cwd));
         strcpy(prompt, cwd);
-        strcat(prompt, " Jaber's Shell>");
+        strcat(prompt, "   Jaber's Shell>");
 
         write(2, prompt, strlen(prompt));
         if(fgets(line, 1024, stdin)==NULL){
