@@ -138,4 +138,77 @@ char *readStdin() {
     return buf;
 }
 
+
+bool checkSyntax(const char *cmd) {
+    int len = strlen(cmd);
+    int parenDepth = 0;
+    bool lastWasOp = true;
+    bool lastWasParenOpen = false;
+
+    for (int i = 0; i < len; i++) {
+        char c = cmd[i];
+
+        if (isspace(c)) continue;
+
+        if (c == '(') {
+            if (!lastWasOp) {
+                fprintf(stderr, "syntax error: unexpected '('\n");
+                return false;
+            }
+            parenDepth++;
+            lastWasOp = true;
+            lastWasParenOpen = true;
+        }
+        else if (c == ')') {
+            if (parenDepth == 0) {
+                fprintf(stderr, "syntax error: unexpected ')'\n");
+                return false;
+            }
+            if (lastWasOp) {
+                fprintf(stderr, "syntax error: empty command before ')'\n");
+                return false;
+            }
+            parenDepth--;
+            lastWasOp = false;
+            lastWasParenOpen = false;
+        }
+        else if (c == '|' || c == ';' || c == '&') {
+            if (lastWasOp) {
+                fprintf(stderr, "syntax error: unexpected '%c'\n", c);
+                return false;
+            }
+            lastWasOp = true;
+        }
+        else if (c == '<' || c == '>') {
+            if (lastWasOp) {
+                fprintf(stderr, "syntax error: unexpected redirection '%c'\n", c);
+                return false;
+            }
+            lastWasOp = true;
+        }
+        else {
+            lastWasOp = false;
+            lastWasParenOpen = false;
+            while (i + 1 < len && !isspace(cmd[i+1]) &&
+                   cmd[i+1] != '(' && cmd[i+1] != ')' &&
+                   cmd[i+1] != '|' && cmd[i+1] != ';' &&
+                   cmd[i+1] != '&' && cmd[i+1] != '<' && cmd[i+1] != '>') {
+                i++;
+            }
+        }
+    }
+
+    if (parenDepth > 0) {
+        fprintf(stderr, "syntax error: '(' not closed\n");
+        return false;
+    }
+    if (lastWasOp) {
+        fprintf(stderr, "syntax error: command ends with operator\n");
+        return false;
+    }
+
+    return true;
+}
+
+
 #endif

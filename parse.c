@@ -251,11 +251,21 @@ struct cmd *parse(char *commandString, int start, int end)
     {
         int startOfCommand = backgroundFirstOccurence - 1;
 
-        while (!isOperator(commandString, startOfCommand) && startOfCommand > 0)
-            startOfCommand--;
+        int closedParenthesis = 0;
 
-        if (isOperator(commandString, startOfCommand))
-            startOfCommand++;
+        while ( startOfCommand>0 && ((closedParenthesis > 0) || commandString[startOfCommand-1]!=';'))
+        {
+            if (commandString[startOfCommand] == ')')
+                closedParenthesis++;
+            else if (commandString[startOfCommand] == '(')
+                closedParenthesis--;
+
+            if (closedParenthesis == 0 && commandString[startOfCommand] == '(')
+                break;
+
+            if (startOfCommand > 0)
+                startOfCommand--;
+        }
 
         return (struct cmd *)backgroundCtor(parse(commandString, startOfCommand, backgroundFirstOccurence - 1));
     }

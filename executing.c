@@ -10,7 +10,7 @@
 #include "commandsImplementations/wc.c"
 #include "commandsImplementations/cd.c"
 
-void exec(char *argv[])
+void exec(char *argv[], bool mainProcess)
 {
     char *cmdName = argv[0];
     
@@ -36,11 +36,11 @@ void exec(char *argv[])
         cd_(argv);
     else{ 
         write(2, "Invalid Command\n", 16);
-        exit(1);
+        if(!mainProcess) exit(1);
     }
 }
 
-void executeCmd(struct cmd *node)
+void executeCmd(struct cmd *node, bool mainProcess)
 {
 
     switch (node->type)
@@ -48,8 +48,8 @@ void executeCmd(struct cmd *node)
     case CONSEC:
     {
         struct consec_cmd *consecNode = (struct consec_cmd *)node;
-        executeCmd(consecNode->left);
-        executeCmd(consecNode->right);
+        executeCmd(consecNode->left, mainProcess);
+        executeCmd(consecNode->right, mainProcess);
         break;
     }
     case PIPE:
@@ -60,14 +60,14 @@ void executeCmd(struct cmd *node)
         if (pipe(pipefd) == -1)
         {
             perror("pipe");
-            exit(1);
+            if(!mainProcess) exit(1);
         }
 
         pid_t pid1 = fork();
         if (pid1 == -1)
         {
             perror("fork");
-            exit(1);
+            if(!mainProcess) exit(1);
         }
 
         if (pid1 == 0)
@@ -75,7 +75,7 @@ void executeCmd(struct cmd *node)
             dup2(pipefd[1], STDOUT_FILENO);
             close(pipefd[0]);
             close(pipefd[1]);
-            executeCmd(pipeNode->left);
+            executeCmd(pipeNode->left, false);
             exit(0);
         }
 
@@ -84,7 +84,7 @@ void executeCmd(struct cmd *node)
         if (pid2 == -1)
         {
             perror("fork");
-            exit(1);
+            if(!mainProcess) exit(1);
         }
 
         if (pid2 == 0)
@@ -92,7 +92,7 @@ void executeCmd(struct cmd *node)
             dup2(pipefd[0], STDIN_FILENO);
             close(pipefd[0]);
             close(pipefd[1]);
-            executeCmd(pipeNode->right);
+            executeCmd(pipeNode->right, false);
             exit(0);
         }
 
@@ -113,11 +113,11 @@ void executeCmd(struct cmd *node)
         if (pid == -1)
         {
             perror("fork");
-            exit(1);
+            if(!mainProcess) exit(1);
         }
         else if (pid == 0)
         {
-            executeCmd(backgroundNode->command);
+            executeCmd(backgroundNode->command, false);
             exit(0);
         }
         else
@@ -140,7 +140,7 @@ void executeCmd(struct cmd *node)
         if (pid == -1)
         {
             perror("fork");
-            exit(1);
+            if(!mainProcess) exit(1);
         }
         else if (pid == 0)
         {
@@ -158,7 +158,7 @@ void executeCmd(struct cmd *node)
 
                 if (fileDescriptor == -1) {
                     perror("open output file");
-                    exit(1);
+                    if(!mainProcess) exit(1);
                 }
                 dup2(fileDescriptor, STDOUT_FILENO);
             }
@@ -167,13 +167,13 @@ void executeCmd(struct cmd *node)
                 fileDescriptor = open(redirectNode->file, O_RDONLY);
                 if (fileDescriptor == -1) {
                     perror("open output file");
-                    exit(1);
+                    if(!mainProcess) exit(1);
                 }
                 dup2(fileDescriptor, STDIN_FILENO);
             }
 
             close(fileDescriptor);
-            executeCmd(redirectNode->command);
+            executeCmd(redirectNode->command, false);
             exit(0);
         }
         break;
@@ -184,9 +184,12 @@ void executeCmd(struct cmd *node)
 
         pid_t pid = fork();
 
-        if(pid<0) perror("fork");
+        if(pid<0){ 
+            perror("fork");
+            if(!mainProcess) exit(1);
+        }
         else if(pid==0){
-            executeCmd(blockNode->command);
+            executeCmd(blockNode->command, false);
             exit(0);
         }
 
@@ -196,7 +199,7 @@ void executeCmd(struct cmd *node)
     case EXEC:
     {
         struct exec_cmd *execNode = (struct exec_cmd *)node;
-        exec(execNode->argv);
+        exec(execNode->argv, mainProcess);
     }
     }
 }

@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <signal.h>
+#include "cmd_utils.c"
 
 
 bool isCdCommand(int start, int end, char *commandString){
@@ -42,6 +43,8 @@ int main(void){
         if(fgets(line, 1024, stdin)==NULL){
             break;
         }
+
+        if(!checkSyntax(line)) continue;
         
         size_t len = strlen(line);
         if (len > 0 && line[len - 1] == '\n') {
@@ -62,7 +65,7 @@ int main(void){
 
                     struct cmd* command = parse(line, lastEncounter+1, end);
                     nullTerminate(command);
-                    executeCmd(command);
+                    executeCmd(command, true);
                 }
                 lastEncounter = currIndex;
             }else if(line[currIndex]=='(') openedParenthesis++;
