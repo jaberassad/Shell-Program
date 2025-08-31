@@ -58,12 +58,16 @@ echo Hello >> log.txt
 
 ## 🚀 How to Run
 
-Compile the shell with any standard C compiler:
+Before running the shell, make sure you have a **C compiler installed** (e.g., `gcc`). Compiling the code is a prerequisite.
 
 ```sh
+# Clone the repository
+git clone https://github.com/jaberassad/Shell-Program.git
+cd Shell-Program
 
-# Example with GCC
+# Compile the shell with a standard C compiler
+# Example using GCC
 gcc -o jsh main.c
 
 # Run the shell
-./main
+./jsh
